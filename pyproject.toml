@@ -1,0 +1,22 @@
+[project]
+name = "framework-bt"
+version = "0.0.1"
+requires-python = ">=3.10"
+dependencies = [
+  "python-bitcoinlib>=0.12",
+  "python-bitcoinrpc>=1.0",   # ←  NUEVO
+  "tqdm>=4.66",
+  "click>=8.1",
+  "pandas>=2.2",
+  "pyarrow>=15",
+]
+
+[project.scripts]
+bt-extract = "framework_bt.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["framework_bt"]
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"

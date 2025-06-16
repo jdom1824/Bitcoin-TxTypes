@@ -1,0 +1,5 @@
+utxos_100k.parquet
+/venv
+/framework_bt
+/framework_bt.egg-info
+.pytest_cache
