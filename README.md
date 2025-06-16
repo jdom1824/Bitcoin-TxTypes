@@ -118,7 +118,7 @@ The script will produce `.parquet` files with columns:
 - tx_id: transaction ID
 - vout: output index
 - value: value in satoshis
-- type: output type (e.g., COINBASE, P2PKH, P2SH, etc.)
+- type: output type (e.g., COINBASE, P2PKH, P2SH, NULLDATA, MULTISIG, UNKNOW, P2WPKH, P2WSH, etc.)
 
 Sample generated files:
 
