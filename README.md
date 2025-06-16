@@ -39,11 +39,27 @@ REQUIREMENTS
     pip install pyarrow pandas tqdm python-bitcoinlib python-bitcoinrpc click
 
 ------------------------------------------------------------
-USAGE
+USAGE 
 ------------------------------------------------------------
 
-🔁 OPTION 1: RPC mode (fastest and most accurate)
+This framework allows you to extract and classify UTXO outputs from the Bitcoin blockchain 
+using either direct RPC access or by scanning blk*.dat files.
 
+──────────────────────────────────────────────
+🔁 OPTION 1: RPC Mode (Fastest and Most Accurate)
+──────────────────────────────────────────────
+
+Connects directly to a running Bitcoin Core node via RPC.
+
+✅ Requirements:
+- Fully synchronized Bitcoin Core node.
+- Enabled RPC server in `bitcoin.conf`, e.g.:
+
+    server=1
+    rpcuser=user
+    rpcpassword=password
+
+🧪 Example:
     bt-extract \
       --rpc \
       --rpc-url "http://user:password@127.0.0.1:8332" \
@@ -52,14 +68,45 @@ USAGE
       --output utxos \
       --chunk-size 50000
 
-📂 OPTION 2: Local blk*.dat files (requires manual scanning)
+🧩 Option Details:
 
+| Option           | Description                                                   |
+|------------------|---------------------------------------------------------------|
+| --rpc            | Enables RPC mode.                                             |
+| --rpc-url        | Full RPC URL with user, password, host, and port.             |
+| --start-height   | Starting block height (inclusive).                            |
+| --end-height     | Ending block height (inclusive).                              |
+| --output         | Output prefix for .parquet files.                             |
+| --chunk-size     | Number of blocks per .parquet file (splits the output).       |
+
+
+──────────────────────────────────────────────
+📂 OPTION 2: Local blk*.dat Files (Manual Scanning)
+──────────────────────────────────────────────
+
+Reads directly from blk*.dat files (default Bitcoin storage format).
+
+⚠️ Notes:
+- Slower: must scan the full file structure to locate blocks by height.
+- Useful if you have block files but no live node.
+
+🧪 Example:
     bt-extract \
       --blk-dir /path/to/bitcoin/blocks \
       --start-height 100000 \
       --end-height 100000 \
       --output utxos \
       --chunk-size 50000
+
+🧩 Option Details:
+
+| Option           | Description                                                   |
+|------------------|---------------------------------------------------------------|
+| --blk-dir        | Path to local blk*.dat directory.                             |
+| --start-height   | Starting block height (inclusive).                            |
+| --end-height     | Ending block height (inclusive).                              |
+| --output         | Output prefix for .parquet files.                             |
+| --chunk-size     | Number of blocks per .parquet file. 
 
 ------------------------------------------------------------
 OUTPUT
