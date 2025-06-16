@@ -16,7 +16,7 @@ INSTALLATION
 
 1. Clone this repository:
 
-    git clone https://github.com/your_user/Framework-Bitcoin-TxTypes.git
+    git clone [https://github.com/your_user/Framework-Bitcoin-TxTypes.git](https://github.com/jdom1824/Bitcoin-TxTypes)
     cd Framework-Bitcoin-TxTypes
 
 2. Create and activate a virtual environment (recommended):
