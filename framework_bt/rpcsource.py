@@ -1,13 +1,11 @@
 """
 rpcsource.py
 ============
-BlockSource que obtiene bloques por JSON-RPC y los entrega en el mismo
-formato que BlkFileSource (diccionario con 'height', 'hash', 'txs').
+BlockSource that retrieves blocks via JSON-RPC and returns them in the same
+format as BlkFileSource (dictionary with 'height', 'hash', 'txs').
 
-• Si el nodo devuelve el error «-28 Verifying blocks…», se lanza
-  NodeSyncing para que la CLI pueda hacer fallback a blk*.dat.
-
-Dependencia:  python-bitcoinrpc   (añádela en pyproject.toml)
+• If the node returns the error “-28 Verifying blocks…”, a NodeSyncing
+  exception is raised so that the CLI can fallback to blk*.dat.
 """
 
 from __future__ import annotations
@@ -20,12 +18,12 @@ from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
 
 class NodeSyncing(RuntimeError):
-    """El nodo RPC todavía está arrancando / verificando (-28)."""
+    """The RPC node is still starting up / verifying (-28)."""
 
 
 # -------------------------------------------------------------------------
 def _safe_rpc(method, *args):
-    """Envuelve una llamada RPC detectando el código -28."""
+    """Wraps an RPC call, detecting error code -28."""
     try:
         return method(*args)
     except JSONRPCException as exc:
@@ -36,7 +34,7 @@ def _safe_rpc(method, *args):
 
 # -------------------------------------------------------------------------
 class RpcSource:
-    """BlockSource que rinde bloques exactos mediante JSON-RPC."""
+    """BlockSource that yields full blocks via JSON-RPC."""
 
     def __init__(
         self,
@@ -52,16 +50,16 @@ class RpcSource:
 
     # ------------------------------------------------------------------ #
     def __iter__(self) -> Iterable[Dict]:
-        # ----- Caso 1: lista de hashes explícitos ----------------------
+        # ----- Case 1: explicit list of hashes -------------------------
         if self.hashes:
             for h in self.hashes:
                 yield self._by_hash(h)
             return
 
-        # ----- Caso 2: rango de alturas --------------------------------
+        # ----- Case 2: range of block heights --------------------------
         if self.start is None or self.end is None:
             raise ValueError(
-                "Con --rpc necesitas --start-height y --end-height o bien --hash."
+                "With --rpc you must specify --start-height and --end-height or --hash."
             )
 
         for h in range(self.start, self.end + 1):
@@ -70,8 +68,8 @@ class RpcSource:
 
     # ------------------------------------------------------------------ #
     def _by_hash(self, blk_hash: str) -> Dict:
-        """Devuelve el bloque {height, hash, txs[]} para el hash dado."""
-        raw_hex = _safe_rpc(self.rpc.getblock, blk_hash, 0)  # 0 = hex
+        """Returns a block {height, hash, txs[]} for the given hash."""
+        raw_hex = _safe_rpc(self.rpc.getblock, blk_hash, 0)  # 0 = hex response
         raw = binascii.unhexlify(raw_hex)
         block = CBlock.deserialize(raw)
         height = _safe_rpc(self.rpc.getblockheader, blk_hash)["height"]

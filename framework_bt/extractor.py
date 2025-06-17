@@ -9,7 +9,7 @@ from .classifier import StandardClassifier
 
 
 def _deserialize_block(raw_block: bytes) -> List[str]:
-    """Deserializa y convierte a lista de transacciones hex."""
+    """Deserialize and convert to a list of transaction hex strings."""
     block = CBlock.deserialize(raw_block)
     return [tx.serialize().hex() for tx in block.vtx]
 
@@ -22,22 +22,30 @@ def extract(
     start_height: Optional[int] = None,
     end_height: Optional[int] = None,
 ):
-    """Extrae bloques desde `source` y produce UTXO clasificados."""
+    """
+    Extract blocks from `source` and produce classified UTXOs.
+
+    :param source: iterable of dicts with block data (must include 'raw' or 'txs')
+    :param classifier: an instance of StandardClassifier to determine script type
+    :param processes: number of processes to use in parallel for deserialization
+    :param start_height: optional lower bound for block height
+    :param end_height: optional upper bound for block height
+    """
     pool = ProcessPoolExecutor(max_workers=processes)
     futures = []
     bar = tqdm(total=0, desc="BLKS", unit="blk", dynamic_ncols=True)
 
     for blk in source:
-        #Filtro manual por altura
+        # Manual height filter
         if start_height is not None and blk["height"] < start_height:
             continue
         if end_height is not None and blk["height"] > end_height:
             continue
 
-        if "txs" in blk:  # ← viene desde RpcSource
+        if "txs" in blk:  # ← Comes from RpcSource (already deserialized)
             bar.update(1)
             yield from _yield_utxos(blk, classifier)
-        else:  # ← viene desde blkfile
+        else:  # ← Comes from blk*.dat files (raw format)
             fut = pool.submit(_deserialize_block, blk["raw"])
             futures.append((fut, blk))
             bar.total += 1
@@ -54,6 +62,13 @@ def extract(
 
 
 def _yield_utxos(blk: dict, classifier: StandardClassifier):
+    """
+    Extract UTXOs from a block and classify their output types.
+
+    :param blk: dictionary containing block metadata and tx list
+    :param classifier: StandardClassifier instance
+    :yield: dictionaries with UTXO details
+    """
     height = blk["height"]
 
     for tx_hex in blk["txs"]:

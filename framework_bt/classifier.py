@@ -1,7 +1,7 @@
 """
 classifier.py
 =============
-Clasificador sencillo de scriptPubKey ➜ tipo de salida.
+Simple classifier of scriptPubKey ➜ output type.
 """
 
 class StandardClassifier:
