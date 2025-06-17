@@ -10,7 +10,7 @@ A lightweight Python framework for extracting and classifying Bitcoin transactio
 
 ### 🎯 Purpose
 
-Analyze Bitcoin transaction output types (P2PKH, P2SH, P2WPKH, etc.) across the blockchain — ideal for research, statistics, protocol studies, or forensic auditing.
+Analyze Bitcoin transaction output types (P2PKH, P2SH, P2WPKH, etc.) across the blockchain — ideal for research, statistics, and, protocol studies.
 
 ---
 
@@ -124,11 +124,34 @@ Lists files, previews rows, and shows a summary (row count, total BTC, distribut
 
 ## ✅ Tests
 
+This project includes the following pytest suites:
+
+- **`tests/test_rpc_source.py`**  
+  Verifies `RpcSource` returns valid blocks and transaction lists.
+
+- **`tests/test_blkfile.py`**  
+  Checks `BlkFileSource` and `ParallelBlkFileSource` correctly scan block files at height 0.
+
+- **`tests/test_blkfile_equivalence.py`**  
+  Ensures serial vs parallel block file sources produce identical blocks.
+
+- **`tests/test_http_vs_rpc.py`**  
+  Confirms that blocks fetched via RPC and via the mempool.space HTTP API have matching hashes.
+
+### Running Tests
+
+To run all tests:
+
 ```bash
-pytest
+pytest -v
 ```
 
-Includes block equivalence tests (RPC vs HTTPS) and parsing validation.
+To run specific suites:
+
+```bash
+pytest tests/test_rpc_source.py tests/test_blkfile.py -v
+pytest tests/test_blkfile_equivalence.py tests/test_http_vs_rpc.py -v
+```
 
 ---
 
