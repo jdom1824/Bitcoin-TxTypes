@@ -60,13 +60,13 @@ Connects directly to a running Bitcoin Core node via RPC.
     rpcpassword=password
 
 🧪 Example:
-    bt-extract \
+    `bt-extract \
       --rpc \
       --rpc-url "http://user:password@127.0.0.1:8332" \
       --start-height 100000 \
       --end-height   100000 \
       --output utxos \
-      --chunk-size 50000
+      --chunk-size 50000`
 
 🧩 Option Details:
 
@@ -91,12 +91,12 @@ Reads directly from blk*.dat files (default Bitcoin storage format).
 - Useful if you have block files but no live node.
 
 🧪 Example:
-    bt-extract \
+    `bt-extract \
       --blk-dir /path/to/bitcoin/blocks \
       --start-height 100000 \
       --end-height 100000 \
       --output utxos \
-      --chunk-size 50000
+      --chunk-size 50000`
 
 🧩 Option Details:
 
