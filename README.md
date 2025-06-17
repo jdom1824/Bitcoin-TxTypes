@@ -51,13 +51,18 @@ This installs the CLI scripts `bt-extract` and `bt-view` directly in your enviro
 bt-extract   --rpc   --rpc-url "http://user:password@127.0.0.1:8332"   --start-height 100000   --end-height   100000   --output utxos
 ```
 
+---
+
 ### 2️⃣ From blk*.dat files (fastest & scalable)
 
 **Ideal for large-scale processing**: reads local Bitcoin Core block files with **parallel decoding**.
 
-- Uses `ParallelBlkFileSource` to spawn multiple processes.
-- Splits work by file range, each worker deserializes blocks and extracts UTXOs.
-- Provides the best throughput on multi-core systems without network I/O.
+1. **Discovery phase**: scans the `blk*.dat` directory to build a sorted list of all file paths and estimates block-height offsets per file.
+2. **Parallel phase**: distributes file ranges across worker processes (`--processes`) using `ParallelBlkFileSource`, where each process:
+   - Opens its assigned files.
+   - Reads the magic number and block length.
+   - Deserializes blocks (`CBlock.deserialize`).
+   - Extracts UTXOs concurrently.
 
 Example:
 
@@ -71,13 +76,18 @@ bt-extract \
   --output utxos
 ```
 
-Behind the scenes, the code:
+Behind the scenes, the core logic:
 
 ```python
+# Build list of files and estimated offsets (~3000 blocks per file)
+blk_files = sorted(os.listdir(blk_dir))
+estimated_offsets = {path: i * 3000 for i, path in enumerate(full_paths)}
+
+# Parallel processing
 with multiprocessing.Pool(processes=8) as pool:
-    pool.imap_unordered(_process_file_for_range, args)
-    for result in pool:
-        yield each UTXO dict
+    for result in pool.imap_unordered(_process_file_for_range, args):
+        for blk in result:
+            yield blk
 ```
 
 ---

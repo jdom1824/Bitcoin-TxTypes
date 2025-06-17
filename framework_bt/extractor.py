@@ -28,7 +28,7 @@ def extract(
     bar = tqdm(total=0, desc="BLKS", unit="blk", dynamic_ncols=True)
 
     for blk in source:
-        # 🔎 Filtro manual por altura
+        #Filtro manual por altura
         if start_height is not None and blk["height"] < start_height:
             continue
         if end_height is not None and blk["height"] > end_height:

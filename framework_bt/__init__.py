@@ -6,4 +6,4 @@ Solo re-exportamos la función extract para que pueda usarse así:
 from .extractor import extract
 
 __all__ = ["extract"]
-__version__ = "0.0.1"
+__version__ = "0.0.2"
