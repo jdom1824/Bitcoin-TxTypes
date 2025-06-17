@@ -51,11 +51,36 @@ This installs the CLI scripts `bt-extract` and `bt-view` directly in your enviro
 bt-extract   --rpc   --rpc-url "http://user:password@127.0.0.1:8332"   --start-height 100000   --end-height   100000   --output utxos
 ```
 
-### 2️⃣ Local blk\*.dat (fastest & parallel)
+### 2️⃣ From blk*.dat files (fastest & scalable)
+
+**Ideal for large-scale processing**: reads local Bitcoin Core block files with **parallel decoding**.
+
+- Uses `ParallelBlkFileSource` to spawn multiple processes.
+- Splits work by file range, each worker deserializes blocks and extracts UTXOs.
+- Provides the best throughput on multi-core systems without network I/O.
+
+Example:
 
 ```bash
-bt-extract   --blk-dir /path/to/blocks   --parallel   --processes 8   --start-height 100000   --end-height   100000   --output utxos
+bt-extract \
+  --blk-dir /path/to/blocks \
+  --parallel \
+  --processes 8 \
+  --start-height 100000 \
+  --end-height   200000 \
+  --output utxos
 ```
+
+Behind the scenes, the code:
+
+```python
+with multiprocessing.Pool(processes=8) as pool:
+    pool.imap_unordered(_process_file_for_range, args)
+    for result in pool:
+        yield each UTXO dict
+```
+
+---
 
 ### 3️⃣ P2P Mode
 
