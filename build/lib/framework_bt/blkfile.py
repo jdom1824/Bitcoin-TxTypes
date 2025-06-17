@@ -2,8 +2,7 @@ import os
 import struct
 import multiprocessing
 from bitcoin.core import CBlock
-from typing import Iterator, Optional 
-from tqdm import tqdm
+from typing import Iterator, Optional  # ← Faltaba esto
 
 MAGIC_BYTES = b"\xf9\xbe\xb4\xd9"
 MAGIC_LEN = 4
@@ -140,49 +139,3 @@ class ParallelBlkFileSource:
             for result in pool.imap_unordered(_process_file_for_range, args):
                 for blk in result:
                     yield blk  # ← Le faltaba cerrar el paréntesis aquí
-
-class BlkFileSource:
-    def __init__(self, blk_dir, start_height=0, end_height=None):
-        self.blk_dir = blk_dir
-        self.start_height = start_height or 0
-        self.end_height = end_height
-        self._count = 0
-
-    def __iter__(self):  # ← ahora está dentro de la clase
-        blk_files = sorted(
-            f for f in os.listdir(self.blk_dir)
-            if f.startswith("blk") and f.endswith(".dat")
-        )
-        bar = tqdm(desc="Leyendo blk*.dat", unit="blk", dynamic_ncols=True)
-
-        for fname in blk_files:
-            path = os.path.join(self.blk_dir, fname)
-
-            with open(path, "rb") as f:
-                while True:
-                    magic = f.read(MAGIC_LEN)
-                    if not magic:
-                        break
-                    if magic != MAGIC_BYTES:
-                        continue
-                    raw_len = f.read(LENGTH_LEN)
-                    if len(raw_len) < 4:
-                        break
-                    block_size = struct.unpack("<I", raw_len)[0]
-                    raw_block = f.read(block_size)
-                    if len(raw_block) < block_size:
-                        break
-
-                    blk_hash = CBlock.deserialize(raw_block).GetHash()
-                    bar.update(1)
-
-                    yield {
-                        "height": self._count,
-                        "hash": blk_hash.hex(),
-                        "raw": raw_block,
-                    }
-
-                    self._count += 1
-
-        bar.close()
-

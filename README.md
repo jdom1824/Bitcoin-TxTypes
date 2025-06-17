@@ -1,148 +1,137 @@
-Framework-Bitcoin-TxTypes
-==========================
+# Framework-Bitcoin-TxTypes
 
-Lightweight framework to extract and classify UTXO transaction output types from the Bitcoin blockchain, 
-using either blk*.dat files or an RPC connection to a full node.
+A lightweight Python framework for extracting and classifying Bitcoin transaction outputs (UTXOs) by type — directly from the Bitcoin blockchain.
 
-✔ Compatible with Python 3.10+
-✔ No BlockSci dependency
-✔ Supports writing to multiple .parquet output files
-✔ Friendly CLI (`bt-extract`)
-✔ Ideal for studying output types (P2PKH, P2SH, etc.)
+✅ Works with:
+- `.blk` raw block files from Bitcoin Core
+- Bitcoin Core via RPC interface
+- P2P download using block hashes and public nodes
+- Mempool.space HTTP API
 
-------------------------------------------------------------
-INSTALLATION
-------------------------------------------------------------
+### 🎯 Purpose
 
-1. Clone this repository:
+Analyze Bitcoin transaction output types (P2PKH, P2SH, P2WPKH, etc.) across the blockchain — ideal for research, statistics, protocol studies, or forensic auditing.
 
-    git clone [https://github.com/jdom1824/Bitcoin-TxTypes.git](https://github.com/jdom1824/Bitcoin-TxTypes)
-    cd Framework-Bitcoin-TxTypes
+---
 
-2. Create and activate a virtual environment (recommended):
+## ✅ Features
 
-    python3 -m venv venv
-    source venv/bin/activate
+- Python 3.10+ compatible  
+- No heavy dependencies like BlockSci  
+- Outputs clean `.parquet` files for easy processing  
+- CLI tools: `bt-extract` and `bt-view`  
+- Four block sources:  
+  1. Local blk *.dat files  
+  2. Bitcoin Core RPC  
+  3. P2P protocol  
+  4. HTTPS API (mempool.space)  
+- Multiprocessing for high performance  
 
-3. Install the framework in editable mode:
+---
 
-    pip install -e .
+## 📦 Installation
 
-------------------------------------------------------------
-REQUIREMENTS
-------------------------------------------------------------
+```bash
+git clone https://github.com/jdom1824/Bitcoin-TxTypes.git
+cd Framework-Bitcoin-TxTypes
+python3 -m venv venv
+source venv/bin/activate
+pip install -e .
+```
 
-- Bitcoin Core node (fully synced)
-- Python >= 3.10
-- Dependencies:
+This installs the CLI scripts `bt-extract` and `bt-view` directly in your environment.
 
-    pip install pyarrow pandas tqdm python-bitcoinlib python-bitcoinrpc click
+---
 
-------------------------------------------------------------
-USAGE 
-------------------------------------------------------------
+## 🚀 Usage
 
-This framework allows you to extract and classify UTXO outputs from the Bitcoin blockchain 
-using either direct RPC access or by scanning blk*.dat files.
+### 1️⃣ RPC Mode
 
-──────────────────────────────────────────────
-🔁 OPTION 1: RPC Mode (Fastest and Most Accurate)
-──────────────────────────────────────────────
+```bash
+bt-extract   --rpc   --rpc-url "http://user:password@127.0.0.1:8332"   --start-height 100000   --end-height   100000   --output utxos
+```
 
-Connects directly to a running Bitcoin Core node via RPC.
+### 2️⃣ Local blk\*.dat (fastest & parallel)
 
-✅ Requirements:
-- Fully synchronized Bitcoin Core node.
-- Enabled RPC server in `bitcoin.conf`, e.g.:
+```bash
+bt-extract   --blk-dir /path/to/blocks   --parallel   --processes 8   --start-height 100000   --end-height   100000   --output utxos
+```
 
-    server=1
-    rpcuser=user
-    rpcpassword=password
+### 3️⃣ P2P Mode
 
-🧪 Example:
-    `bt-extract \
-      --rpc \
-      --rpc-url "http://user:password@127.0.0.1:8332" \
-      --start-height 100000 \
-      --end-height   100000 \
-      --output utxos \
-      --chunk-size 50000`
+```bash
+bt-extract   --p2p   --start-height 100000   --end-height   100000   --output utxos
+```
 
-🧩 Option Details:
+Use a fixed peer if desired:
 
-| Option           | Description                                                   |
-|------------------|---------------------------------------------------------------|
-| --rpc            | Enables RPC mode.                                             |
-| --rpc-url        | Full RPC URL with user, password, host, and port.             |
-| --start-height   | Starting block height (inclusive).                            |
-| --end-height     | Ending block height (inclusive).                              |
-| --output         | Output prefix for .parquet files.                             |
-| --chunk-size     | Number of blocks per .parquet file (splits the output).       |
+```bash
+bt-extract   --p2p --peer-ip 65.109.158.58   --start-height 100000   --end-height   100000   --output utxos
+```
 
+### 4️⃣ HTTPS API Mode (mempool.space)
 
-──────────────────────────────────────────────
-📂 OPTION 2: Local blk*.dat Files (Manual Scanning)
-──────────────────────────────────────────────
+```bash
+bt-extract   --mempool   --start-height 800010   --end-height   800010   --output utxos_http
+```
 
-Reads directly from blk*.dat files (default Bitcoin storage format).
+---
 
-⚠️ Notes:
-- Slower: must scan the full file structure to locate blocks by height.
-- Useful if you have block files but no live node.
+## 🔧 Performance Options
 
-🧪 Example:
-    `bt-extract \
-      --blk-dir /path/to/bitcoin/blocks \
-      --start-height 100000 \
-      --end-height 100000 \
-      --output utxos \
-      --chunk-size 50000`
+- `--parallel`: enable multiprocessing for scanning blk *.dat  
+- `--processes N`: number of worker processes (default: 4)  
 
-🧩 Option Details:
+---
 
-| Option           | Description                                                   |
-|------------------|---------------------------------------------------------------|
-| --blk-dir        | Path to local blk*.dat directory.                             |
-| --start-height   | Starting block height (inclusive).                            |
-| --end-height     | Ending block height (inclusive).                              |
-| --output         | Output prefix for .parquet files.                             |
-| --chunk-size     | Number of blocks per .parquet file. 
+## 🧪 Output
 
-------------------------------------------------------------
-OUTPUT
-------------------------------------------------------------
+Generates Parquet chunks:
 
-The script will produce `.parquet` files with columns:
+```
+utxos_0001.parquet
+utxos_0002.parquet
+...
+```
 
-- height: block height
-- tx_id: transaction ID
-- vout: output index
-- value: value in satoshis
-- type: output type (e.g., COINBASE, P2PKH, P2SH, NULLDATA, MULTISIG, UNKNOW, P2WPKH, P2WSH, etc.)
+Columns:
 
-Sample generated files:
+- **height**: block height  
+- **tx_id**: transaction ID (hex)  
+- **vout**: output index  
+- **value**: satoshis  
+- **type**: script classification  
 
-    utxos_0001.parquet
-    utxos_0002.parquet
-    ...
+Load in Python:
 
-To read with `pandas`:
+```python
+import pandas as pd
+df = pd.read_parquet("utxos_0001.parquet")
+print(df.head())
+```
 
-    import pandas as pd
-    df = pd.read_parquet("utxos_0001.parquet")
-    print(df.head())
+---
 
-------------------------------------------------------------
-TESTING
-------------------------------------------------------------
+## 👀 Inspect with `bt-view`
 
-To run the tests:
+```bash
+bt-view --prefix utxos --head 15
+```
 
-    python3 -m pytest -v
+Lists files, previews rows, and shows a summary (row count, total BTC, distribution by type, file size).
 
-------------------------------------------------------------
-LICENSE
-------------------------------------------------------------
+---
 
-MIT. Free for academic and commercial use.
+## ✅ Tests
 
+```bash
+pytest
+```
+
+Includes block equivalence tests (RPC vs HTTPS) and parsing validation.
+
+---
+
+## 📄 License
+
+MIT License. Free for academic and commercial use.

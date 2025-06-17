@@ -1,6 +1,6 @@
 from __future__ import annotations
 from concurrent.futures import ProcessPoolExecutor
-from typing import Iterable, List, Optional
+from typing import Iterable, List
 
 from tqdm import tqdm
 from bitcoin.core import CBlock, CTransaction, b2lx
@@ -19,29 +19,22 @@ def extract(
     classifier: StandardClassifier,
     *,
     processes: int = 4,
-    start_height: Optional[int] = None,
-    end_height: Optional[int] = None,
 ):
     """Extrae bloques desde `source` y produce UTXO clasificados."""
     pool = ProcessPoolExecutor(max_workers=processes)
     futures = []
-    bar = tqdm(total=0, desc="BLKS", unit="blk", dynamic_ncols=True)
+    bar = tqdm(desc="BLKS", unit="blk", dynamic_ncols=True)
 
     for blk in source:
-        # 🔎 Filtro manual por altura
-        if start_height is not None and blk["height"] < start_height:
-            continue
-        if end_height is not None and blk["height"] > end_height:
-            continue
-
         if "txs" in blk:  # ← viene desde RpcSource
             bar.update(1)
             yield from _yield_utxos(blk, classifier)
         else:  # ← viene desde blkfile
             fut = pool.submit(_deserialize_block, blk["raw"])
             futures.append((fut, blk))
+        if bar.total is not None:
             bar.total += 1
-            bar.refresh()
+        bar.refresh()
 
     for fut, meta in futures:
         txs_hex = fut.result()
