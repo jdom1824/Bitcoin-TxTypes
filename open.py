@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_parquet("utxos_100k.parquet")
+df = pd.read_parquet("utxos_0017.parquet")
 
 print(df.to_string(index=False))  # Muestra todo
 print(f"\nTotal UTXOs: {len(df)}")

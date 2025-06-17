@@ -22,7 +22,7 @@ class BlkFileSource:
         blk_dir: str,
         start_height: Optional[int] = 0,
         end_height: Optional[int] = None,
-        hashes: Optional[list[str]] = None,  # ← aceptado aunque no usado aún
+        hashes: Optional[list[str]] = None,  
     ):
         self.blk_dir = blk_dir
         self.start_height = start_height or 0
