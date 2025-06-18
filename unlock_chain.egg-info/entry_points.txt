@@ -1,0 +1,3 @@
+[console_scripts]
+bt-extract = framework_bt.cli:main
+bt-view = framework_bt.viewer:main

@@ -1,7 +1,14 @@
 [project]
-name = "framework-bt"
-version = "0.0.1"
+name = "unlock-chain"
+version = "0.0.2"
+readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+
+authors = [
+  {name = "jdom1824", email = "jdom1824@gmail.com"}
+]
+
 dependencies = [
   "python-bitcoinlib>=0.12",
   "python-bitcoinrpc>=1.0",
@@ -10,15 +17,21 @@ dependencies = [
   "tqdm>=4.66",
   "click>=8.1",
   "pandas>=2.2",
-  "pyarrow>=15",
+  "pyarrow>=15"
 ]
+
+[project.urls]
+Homepage = "https://github.com/jdom1824"
+Repository = "https://github.com/jdom1824/Bitcoin-TxTypes"
+
 [project.scripts]
 bt-extract = "framework_bt.cli:main"
 bt-view    = "framework_bt.viewer:main"
 
-[tool.setuptools.packages.find]
-include = ["framework_bt"]
-
 [build-system]
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["framework_bt"]
+

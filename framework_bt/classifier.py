@@ -1,18 +1,16 @@
-"""
-classifier.py
-=============
-Simple classifier of scriptPubKey ➜ output type.
-"""
-
 class StandardClassifier:
     TYPES = {
         "P2PKH": ("76a914", "88ac"),
         "P2SH": ("a914", "87"),
-        "P2WPKH": ("0014", 44),  # 20 bytes = 40 hex + "0014" (4 chars)
-        "P2WSH": ("0020", 68),   # 32 bytes = 64 hex + "0020" (4 chars)
+        "P2WPKH": ("0014", 44),
+        "P2WSH": ("0020", 68),
+        "P2TR": ("5120", 68),
     }
 
     def classify(self, script_hex: str, *, coinbase: bool = False) -> str:
+        if not script_hex:
+            return "UNKNOWN"
+
         s = script_hex.lower()
 
         if coinbase:
@@ -33,4 +31,11 @@ class StandardClassifier:
         if s.startswith(self.TYPES["P2WSH"][0]) and len(s) == self.TYPES["P2WSH"][1]:
             return "P2WSH"
 
-        return "OTHER"
+        if s.startswith(self.TYPES["P2TR"][0]) and len(s) == self.TYPES["P2TR"][1]:
+            return "P2TR"
+
+        # Si no parece nada reconocible, pero no está vacío → OTHER
+        if len(s) >= 4:
+            return "OTHER"
+
+        return "UNKNOWN"

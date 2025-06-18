@@ -1,3 +1,21 @@
+Metadata-Version: 2.4
+Name: unlock-chain
+Version: 0.0.2
+Author-email: jdom1824 <jdom1824@gmail.com>
+License: MIT
+Project-URL: Homepage, https://github.com/jdom1824
+Project-URL: Repository, https://github.com/jdom1824/Bitcoin-TxTypes
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: python-bitcoinlib>=0.12
+Requires-Dist: python-bitcoinrpc>=1.0
+Requires-Dist: requests>=2.32
+Requires-Dist: bitcoinlib>=0.6
+Requires-Dist: tqdm>=4.66
+Requires-Dist: click>=8.1
+Requires-Dist: pandas>=2.2
+Requires-Dist: pyarrow>=15
+
 # Framework-Bitcoin-TxTypes
 
 A lightweight Python framework for extracting and classifying Bitcoin transaction outputs (UTXOs) by type — directly from the Bitcoin blockchain.
@@ -11,7 +29,6 @@ A lightweight Python framework for extracting and classifying Bitcoin transactio
 ### 🎯 Purpose
 
 Analyze Bitcoin transaction output types (P2PKH, P2SH, P2WPKH, etc.) across the blockchain — ideal for research, statistics, and, protocol studies.
-![Unlock Chain Diagram](unlock-chain.png)
 
 ---
 
