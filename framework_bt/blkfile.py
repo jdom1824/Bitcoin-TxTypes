@@ -147,25 +147,55 @@ class ParallelBlkFileSource:
         self.start_height = start_height or 0
         self.end_height = end_height or 0xFFFFFFFF
         self.processes = processes
+        self.index_path = os.path.join(blk_dir, INDEX_FILE)
+        self.index = self._load_index()
+
+    def _load_index(self):
+        if not Path(self.index_path).exists():
+            raise FileNotFoundError(f"Index file not found: {self.index_path}")
+        with open(self.index_path) as f:
+            return json.load(f)
 
     def __iter__(self) -> Iterator[dict]:
-        blk_files = sorted(
-            f for f in os.listdir(self.blk_dir)
-            if f.startswith("blk") and f.endswith(".dat")
-        )
-        full_paths = [os.path.join(self.blk_dir, f) for f in blk_files]
-        estimated_offsets = {path: i * 3000 for i, path in enumerate(full_paths)}
-        args = [
-            (path, estimated_offsets[path], self.start_height, self.end_height)
-            for path in full_paths
-        ]
+        heights = [int(h) for h in self.index if self.start_height <= int(h) <= self.end_height]
+        heights.sort()
 
-        total_files = len(args)
+        # Repartimos las alturas entre procesos
+        chunks = [heights[i::self.processes] for i in range(self.processes)]
+
         with multiprocessing.Pool(processes=self.processes) as pool, tqdm(
-            total=total_files, desc="Parallel blk*.dat", unit="file", dynamic_ncols=True
+            total=len(heights), desc="Parallel indexed blk.dat", unit="blk", dynamic_ncols=True
         ) as bar:
-            for result in pool.imap_unordered(_process_file_for_range, args):
-                for blk in result:
+            results = pool.imap_unordered(self._read_blocks_chunk, chunks)
+            for blk_list in results:
+                for blk in blk_list:
                     yield blk
-                bar.update(1)
+                    bar.update(1)
 
+    def _read_blocks_chunk(self, heights: list[int]) -> list[dict]:
+        out = []
+        for h in heights:
+            meta = self.index.get(str(h)) or self.index.get(h)
+            if not meta:
+                continue
+            path = os.path.join(self.blk_dir, meta["file"])
+            try:
+                with open(path, "rb") as f:
+                    f.seek(meta["offset"])
+                    magic = f.read(MAGIC_LEN)
+                    if magic != MAGIC_BYTES:
+                        continue
+                    raw_len = f.read(LENGTH_LEN)
+                    if len(raw_len) < 4:
+                        continue
+                    block_size = struct.unpack("<I", raw_len)[0]
+                    raw_block = f.read(block_size)
+                    blk_hash = CBlock.deserialize(raw_block).GetHash()
+                    out.append({
+                        "height": int(h),
+                        "hash": blk_hash.hex(),
+                        "raw": raw_block,
+                    })
+            except Exception:
+                continue
+        return out

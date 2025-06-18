@@ -46,7 +46,7 @@ from .extractor     import extract
 # ───────────── Output ──────────────
 @click.option("--output", type=str, default="utxos", show_default=True,
               help="Prefix for output Parquet files")
-@click.option("--chunk-size", type=int, default=100_000, show_default=True,
+@click.option("--chunk-size", type=int, default=1_000_000, show_default=True,
               help="Number of UTXOs per Parquet file")
 def main(blk_dir, rpc, rpc_url, p2p, peer_ip, mempool,
          start_height, end_height,

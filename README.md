@@ -151,7 +151,7 @@ print(df.head())
 ## 👀 Inspect with `bt-view`
 
 ```bash
-bt-view --prefix utxos --head 15
+bt-view --prefix '*' --head 15
 ```
 
 Lists files, previews rows, and shows a summary (row count, total BTC, distribution by type, file size).
