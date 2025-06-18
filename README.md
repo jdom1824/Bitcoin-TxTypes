@@ -57,38 +57,39 @@ bt-extract   --rpc   --rpc-url "http://user:password@127.0.0.1:8332"   --start-h
 
 **Ideal for large-scale processing**: reads local Bitcoin Core block files with **parallel decoding**.
 
-1. **Discovery phase**: scans the `blk*.dat` directory to build a sorted list of all file paths and estimates block-height offsets per file.
-2. **Parallel phase**: distributes file ranges across worker processes (`--processes`) using `ParallelBlkFileSource`, where each process:
-   - Opens its assigned files.
-   - Reads the magic number and block length.
-   - Deserializes blocks (`CBlock.deserialize`).
-   - Extracts UTXOs concurrently.
+#### 🧭 Step 1: Generate the block index (sequential)
 
-Example:
+Before using parallel processing, the tool builds an index file `.blkindex.json` that maps block heights to their location (file + offset). This is done automatically the first time you run `bt-extract` **without `--parallel`**:
 
 ```bash
-bt-extract \
-  --blk-dir /path/to/blocks \
-  --parallel \
-  --processes 8 \
-  --start-height 100000 \
-  --end-height   200000 \
-  --output utxos
+bt-extract   --blk-dir /path/to/blocks   --start-height 0   --end-height 1000   --output utxos
 ```
 
-Behind the scenes, the core logic:
+This will:
 
-```python
-# Build list of files and estimated offsets (~3000 blocks per file)
-blk_files = sorted(os.listdir(blk_dir))
-estimated_offsets = {path: i * 3000 for i, path in enumerate(full_paths)}
+- Scan all `blk*.dat` files.
+- Identify every block.
+- Create `.blkindex.json` in the same directory.
+- Extract UTXOs in a single process.
 
-# Parallel processing
-with multiprocessing.Pool(processes=8) as pool:
-    for result in pool.imap_unordered(_process_file_for_range, args):
-        for blk in result:
-            yield blk
+#### ⚡ Step 2: Run in parallel mode (faster)
+
+Once the index exists, you can use `--parallel` and `--processes` to decode multiple files concurrently:
+
+```bash
+bt-extract   --blk-dir /path/to/blocks   --parallel   --processes 8   --start-height 100000   --end-height   200000   --output utxos
 ```
+
+Internally, the tool:
+
+- Reads the `.blkindex.json` to get exact file/offsets per height.
+- Distributes blocks across worker processes.
+- Each process deserializes blocks and extracts UTXOs concurrently.
+
+#### ℹ️ Notes
+
+- If the index does **not** exist, it will be created automatically — but only when **not using** `--parallel`.
+- The default height estimation (~3000 blocks per `blk*.dat`) is only a fallback; the index provides accurate mapping.
 
 ---
 

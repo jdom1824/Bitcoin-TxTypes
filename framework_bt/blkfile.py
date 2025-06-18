@@ -20,32 +20,36 @@ def build_index(blk_dir: str) -> dict:
         for f in os.listdir(blk_dir)
         if f.startswith("blk") and f.endswith(".dat")
     )
+
     height = 0
-    for path in blk_files:
-        with open(path, "rb") as f:
-            offset = 0
-            while True:
-                magic = f.read(MAGIC_LEN)
-                if not magic:
-                    break
-                if magic != MAGIC_BYTES:
-                    f.seek(offset + 1)
-                    offset += 1
-                    continue
-                raw_len = f.read(LENGTH_LEN)
-                if len(raw_len) < 4:
-                    break
-                block_size = struct.unpack("<I", raw_len)[0]
-                raw_block = f.read(block_size)
-                if len(raw_block) < block_size:
-                    break
-                index[height] = {"file": os.path.basename(path), "offset": offset}
-                offset = f.tell()
-                height += 1
+    total_files = len(blk_files)
+    with tqdm(total=total_files, desc="Indexing blk*.dat", unit="file", dynamic_ncols=True) as file_bar:
+        for path in blk_files:
+            with open(path, "rb") as f:
+                offset = 0
+                while True:
+                    magic = f.read(MAGIC_LEN)
+                    if not magic:
+                        break
+                    if magic != MAGIC_BYTES:
+                        f.seek(offset + 1)
+                        offset += 1
+                        continue
+                    raw_len = f.read(LENGTH_LEN)
+                    if len(raw_len) < 4:
+                        break
+                    block_size = struct.unpack("<I", raw_len)[0]
+                    raw_block = f.read(block_size)
+                    if len(raw_block) < block_size:
+                        break
+                    index[height] = {"file": os.path.basename(path), "offset": offset}
+                    offset = f.tell()
+                    height += 1
+            file_bar.update(1)
+
     with open(os.path.join(blk_dir, INDEX_FILE), "w") as f:
         json.dump(index, f)
     return index
-
 
 class BlkFileSource:
     def __init__(self, blk_dir, start_height=0, end_height=None):
