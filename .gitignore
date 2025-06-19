@@ -3,3 +3,4 @@ utxos_100k.parquet
 /framework_bt.egg-info
 .pytest_cache
 /build
+/unlock_chain.egg-info

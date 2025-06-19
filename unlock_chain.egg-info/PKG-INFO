@@ -29,6 +29,7 @@ A lightweight Python framework for extracting and classifying Bitcoin transactio
 ### 🎯 Purpose
 
 Analyze Bitcoin transaction output types (P2PKH, P2SH, P2WPKH, etc.) across the blockchain — ideal for research, statistics, and, protocol studies.
+![Unlock Chain Diagram](unlock-chain.png)
 
 ---
 
