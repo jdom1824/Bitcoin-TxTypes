@@ -8,10 +8,28 @@ from bitcoin.core import CBlock, CTransaction, b2lx
 from .classifier import StandardClassifier
 
 
-def _deserialize_block(raw_block: bytes) -> List[str]:
-    """Deserialize and convert to a list of transaction hex strings."""
+def analyze_transaction(tx: CTransaction) -> dict:
+
+    raw_total = tx.serialize()  # Incluye testigo
+    raw_base = tx.serialize_without_witness()  # Excluye testigo
+
+    total_size = len(raw_total)
+    base_size = len(raw_base)
+    is_segwit = base_size != total_size
+    weight = base_size * 3 + total_size
+
+    return {
+        "txid": tx.GetTxid().hex(),
+        "is_segwit": is_segwit,
+        "base_size": base_size,
+        "total_size": total_size,
+        "weight": weight,
+    }
+
+
+def _deserialize_block(raw_block: bytes) -> List[dict]:
     block = CBlock.deserialize(raw_block)
-    return [tx.serialize().hex() for tx in block.vtx]
+    return [analyze_transaction(tx) for tx in block.vtx]
 
 
 def extract(
@@ -21,73 +39,19 @@ def extract(
     processes: int = 4,
     start_height: Optional[int] = None,
     end_height: Optional[int] = None,
-):
-    """
-    Extract blocks from `source` and produce classified UTXOs.
+) -> List[dict]:
+    data = []
+    with ProcessPoolExecutor(max_workers=processes) as executor:
+        futures = []
+        for block in source:
+            if "raw" not in block:
+                continue
+            futures.append(executor.submit(_deserialize_block, block["raw"]))
 
-    :param source: iterable of dicts with block data (must include 'raw' or 'txs')
-    :param classifier: an instance of StandardClassifier to determine script type
-    :param processes: number of processes to use in parallel for deserialization
-    :param start_height: optional lower bound for block height
-    :param end_height: optional upper bound for block height
-    """
-    pool = ProcessPoolExecutor(max_workers=processes)
-    futures = []
-    bar = tqdm(total=0, desc="BLKS", unit="blk", dynamic_ncols=True)
+        for f in tqdm(futures, desc="Processing blocks"):
+            try:
+                data.extend(f.result())
+            except Exception as e:
+                print("Error in block processing:", e)
 
-    for blk in source:
-        # Manual height filter
-        if start_height is not None and blk["height"] < start_height:
-            continue
-        if end_height is not None and blk["height"] > end_height:
-            continue
-
-        if "txs" in blk:  # ← Comes from RpcSource (already deserialized)
-            bar.update(1)
-            yield from _yield_utxos(blk, classifier)
-        else:  # ← Comes from blk*.dat files (raw format)
-            fut = pool.submit(_deserialize_block, blk["raw"])
-            futures.append((fut, blk))
-            bar.total += 1
-            bar.refresh()
-
-    for fut, meta in futures:
-        txs_hex = fut.result()
-        meta["txs"] = txs_hex
-        bar.update(1)
-        yield from _yield_utxos(meta, classifier)
-
-    bar.close()
-    pool.shutdown()
-
-
-def _yield_utxos(blk: dict, classifier: StandardClassifier):
-    """
-    Extract UTXOs from a block and classify their output types.
-
-    :param blk: dictionary containing block metadata and tx list
-    :param classifier: StandardClassifier instance
-    :yield: dictionaries with UTXO details
-    """
-    height = blk["height"]
-
-    for tx_hex in blk["txs"]:
-        tx = CTransaction.deserialize(bytes.fromhex(tx_hex))
-        is_coinbase = (
-            len(tx.vin) == 0
-            or (
-                tx.vin[0].prevout.hash == b"\x00" * 32
-                and tx.vin[0].prevout.n == 0xFFFFFFFF
-            )
-        )
-        txid = b2lx(tx.GetTxid())
-        total_out = sum(o.nValue for o in tx.vout) or 1
-
-        for idx, out in enumerate(tx.vout):
-            yield {
-                "height": height,
-                "tx_id": txid,
-                "vout": idx,
-                "value": out.nValue,
-                "type": classifier.classify(out.scriptPubKey.hex(), coinbase=is_coinbase),
-            }
+    return data

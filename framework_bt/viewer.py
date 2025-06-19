@@ -41,12 +41,12 @@ def main(prefix: str, head: int):
     table = pq.read_table(sel)
     df = table.to_pandas()
 
-    # quick view
+    # Display first N rows
     click.echo(df.head(head).to_string(index=False))
 
-    # ── summary ─────────────────────────────────────────────
+    # ── basic summary ─────────────────────────────────────
     total_rows   = len(df)
-    total_value  = df["value"].sum() / SATOSHI        # → BTC
+    total_value  = df["value"].sum() / SATOSHI        # BTC
     size_mb      = sel.stat().st_size / 1_048_576
 
     click.echo("\nSummary:")
@@ -54,7 +54,7 @@ def main(prefix: str, head: int):
     click.echo(f"  ▸ total value        : {total_value:,.8f} BTC")
     click.echo(f"  ▸ file size          : {size_mb:.1f} MB")
 
-    # distribution by type
+    # Summary by UTXO type
     click.echo("\n  Distribution by 'type':")
     dist = (
         df.groupby("type")
@@ -64,6 +64,29 @@ def main(prefix: str, head: int):
     dist["btc"] = dist["sats"] / SATOSHI
     dist = dist.drop(columns="sats")
     click.echo(dist.to_string())
+
+    # ── optional: weight analysis by transaction format ─────────────
+    if "is_segwit" in df.columns and "weight" in df.columns:
+        click.echo("\nTransaction format summary (SegWit vs Legacy):")
+
+        segwit_df = df[df["is_segwit"] == True]
+        legacy_df = df[df["is_segwit"] == False]
+
+        segwit_count = len(segwit_df)
+        segwit_weight = segwit_df["weight"].sum()
+
+        legacy_count = len(legacy_df)
+        legacy_weight = legacy_df["weight"].sum()
+
+        total_weight = df["weight"].sum()
+
+        click.echo(f"  ▸ SegWit transactions : {segwit_count:,} txs")
+        click.echo(f"     ↳ total weight     : {segwit_weight:,} WU")
+
+        click.echo(f"  ▸ Legacy transactions : {legacy_count:,} txs")
+        click.echo(f"     ↳ total weight     : {legacy_weight:,} WU")
+
+        click.echo(f"\n  ▸ Overall total weight: {total_weight:,} WU")
 
     click.echo("\nDone.")
 
