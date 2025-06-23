@@ -93,6 +93,41 @@ Internally, the tool:
 - The default height estimation (~3000 blocks per `blk*.dat`) is only a fallback; the index provides accurate mapping.
 
 ---
+#### ⚠️ Recommended for full blockchain extraction
+
+To avoid memory saturation, we **recommend splitting extraction in batches** using a Bash script that processes every 100 blocks:
+
+```bash
+#!/bin/bash
+START=0
+END=870400
+STEP=100
+OUTDIR="utxos_blk"
+BLKDIR="/media/jdom-sas/node/Bitcoin/blocks"
+
+mkdir -p "$OUTDIR"
+
+for (( HEIGHT=$START; HEIGHT<=$END; HEIGHT+=$STEP ))
+do
+    FROM=$HEIGHT
+    TO=$(( HEIGHT + STEP - 1 ))
+    if [ $TO -gt $END ]; then
+        TO=$END
+    fi
+
+    echo "Procesando bloques $FROM a $TO..."
+
+    bt-extract \
+      --blk-dir "$BLKDIR" \
+      --start-height "$FROM" \
+      --end-height "$TO" \
+      --output "$OUTDIR/utxos_${FROM}_${TO}.parquet"
+done
+```
+
+This method guarantees stable RAM usage and allows you to resume or parallelize work more easily.
+
+---
 
 ### 3️⃣ P2P Mode
 
