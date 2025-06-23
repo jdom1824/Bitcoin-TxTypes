@@ -3,7 +3,7 @@
 # Configuración
 START=0
 END=870400
-STEP=100000
+STEP=10000
 OUTDIR="utxos_blk"
 BLKDIR="/media/jdom-sas/node/Bitcoin/blocks"
 

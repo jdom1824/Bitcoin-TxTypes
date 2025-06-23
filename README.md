@@ -95,13 +95,13 @@ Internally, the tool:
 ---
 #### ⚠️ Recommended for full blockchain extraction
 
-To avoid memory saturation, we **recommend splitting extraction in batches** using a Bash script that processes every 100 blocks:
+To avoid memory saturation, we **recommend splitting extraction in batches** using a Bash script that processes every 10.000 blocks:
 
 ```bash
 #!/bin/bash
 START=0
 END=870400
-STEP=100
+STEP=10000
 OUTDIR="utxos_blk"
 BLKDIR="/media/jdom-sas/node/Bitcoin/blocks"
 
