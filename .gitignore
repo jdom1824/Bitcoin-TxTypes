@@ -4,5 +4,5 @@ utxos_100k.parquet
 .pytest_cache
 /build
 /unlock_chain.egg-info
-utxo_blk
+/utxo_blk
 /dist
