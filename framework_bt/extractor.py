@@ -113,7 +113,7 @@ def _yield_utxos(blk: dict, classifier: StandardClassifier):
         is_coinbase = (
             len(tx.vin) == 0
             or (
-                tx.vin[0].prevout.hash == b"\\x00" * 32
+                tx.vin[0].prevout.hash == b"\x00" * 32
                 and tx.vin[0].prevout.n == 0xFFFFFFFF
             )
         )
