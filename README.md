@@ -1,4 +1,4 @@
-# Framework-Bitcoin-TxTypes
+# Framework Unlock-chain
 
 A lightweight Python framework for extracting and classifying Bitcoin transaction outputs (UTXOs) by type — directly from the Bitcoin blockchain.
 
