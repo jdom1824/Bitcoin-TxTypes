@@ -62,8 +62,10 @@ def _analyze_tx_metadata(tx: CTransaction) -> dict:
 def _deserialize_block(raw_block: bytes) -> List[str]:
     """Convierte un bloque bruto en lista de transacciones hex."""
     block = CBlock.deserialize(raw_block)
-    return [tx.serialize().hex() for tx in block.vtx]
-
+    return {
+        "txs": [tx.serialize().hex() for tx in block.vtx],
+        "time": block.nTime  # ← timestamp UNIX del bloque
+    }
 
 # ───────────────────────────────────────────────────────────────────
 #  Función pública: extract(...)
@@ -114,7 +116,9 @@ def extract(
 
     # Recolectar los resultados pendientes
     for fut, meta in futures:
-        meta["txs"] = fut.result()
+        result = fut.result()
+        meta["txs"]  = result["txs"]
+        meta["time"] = result["time"]   # ← aquí guardamos timestamp
         bar.update(1)
         yield from _yield_utxos(meta, classifier)
 
@@ -131,8 +135,10 @@ def _yield_utxos(blk: dict, classifier: StandardClassifier):
     Extrae todas las salidas (UTXOs) de un bloque y las clasifica.
     Añade:
         - vin_count : número de entradas de la transacción
+        - time      : timestamp UNIX del bloque
     """
     height = blk["height"]
+    blk_time = blk.get("time")   # ← timestamp ya disponible
 
     for tx_hex in blk["txs"]:
         tx  = CTransaction.deserialize(bytes.fromhex(tx_hex))
@@ -147,15 +153,16 @@ def _yield_utxos(blk: dict, classifier: StandardClassifier):
         )
 
         tx_meta   = _analyze_tx_metadata(tx)
-        vin_count = len(tx.vin)               # ← nuevo campo
+        vin_count = len(tx.vin)
 
         for idx, out in enumerate(tx.vout):
             yield {
                 "height":   height,
+                "time":     blk_time,      # ← lo incluimos aquí
                 "tx_id":    txid,
                 "vout":     idx,
                 "value":    out.nValue,
-                "vin_count": vin_count,       # ← incluido en cada fila
+                "vin_count": vin_count,
                 "type":     classifier.classify(out.scriptPubKey.hex(),
                                                coinbase=is_coinbase),
                 **tx_meta
